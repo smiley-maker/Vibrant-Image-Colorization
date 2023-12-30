@@ -1,0 +1,5 @@
+setuptools
+build
+tensorflow
+numpy
+matplotlib
