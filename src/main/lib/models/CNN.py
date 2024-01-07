@@ -1,5 +1,8 @@
 #Imports
 
+# 
+from src.main.lib.dataHandlers.pokemonHandler import pokemonHandler
+
 #Network
 from keras.layers import Conv2D, Input, MaxPooling2D, BatchNormalization, LeakyReLU
 from keras.layers import concatenate
@@ -25,22 +28,22 @@ class CNN:
     SAVE_MODEL_PATH = "src/saved_models/"
     SHAPE = (256, 256)
 
-    def __init__(self, input_shape : tuple, output_shape : tuple, epochs, lr = 0.001):
-        self.input_shape = self.SHAPE
-        self.output_shape = output_shape
-        self.epochs = epochs
+    def __init__(self, lr):
         self.lr = lr
-
+        self.input_shape = CNN.SHAPE
         self.input = Input(shape=self.input_shape)
         print(self.input)
         self.output = self.initialize_model(self.input)
         print(self.output)
 
         self.model = Model(self.input, self.output, name="cnn_256")
+        self.model.compile(optimizer=Adam(learning_rate=lr), loss=self.hue_bin_loss)
+        
     
     def hue_bin_loss(self, y_true, y_pred):
-        a_true, b_true = tf.split(tf.squeeze(y_true, axis=-1), num_or_size_splits=2, axis=-1)
-        a_pred, b_pred = tf.split(tf.squeeze(y_pred, axis=-1), num_or_size_splits=2, axis=-1)
+        print(f"y true has size: {y_true.shape}")
+        a_true, b_true = tf.split(y_true, num_or_size_splits=2, axis=-1)
+        a_pred, b_pred = tf.split(y_pred, num_or_size_splits=2, axis=-1)
         
         print("a_true shape:", a_true.shape)
         print("b_true shape:", b_true.shape)
@@ -62,14 +65,52 @@ class CNN:
         return tf.reduce_mean(total_loss)  # Use reduce_mean to ensure a scalar loss value
     
     
-    def train(self, x_train, y_train, batchSize : int, epochs : int, folder : str, callBacks = [], decayFactor: float = 1) -> None :
+    def train_with_generator(self, handler: pokemonHandler, epochs: int, folder: str, callbacks=[], lr: float = 0.001) -> None:
+        if not os.path.exists(CNN.SAVE_FILE_PATH + folder):
+            os.makedirs(CNN.SAVE_FILE_PATH + folder)
+            os.makedirs(os.path.join(CNN.SAVE_FILE_PATH + folder, 'viz'))
+            os.makedirs(os.path.join(CNN.SAVE_FILE_PATH + folder, 'weights'))
+            os.makedirs(os.path.join(CNN.SAVE_FILE_PATH + folder, 'images'))
+
+        optimizer = Adam(lr)
+
+        num_steps = len(handler.train_generator)
+
+        print(f"Epochs {epochs}, steps per epoch {num_steps}")
+
+        for epoch in range(epochs):
+            for step in range(num_steps):
+                X_batch, y_batch = handler.preprocessBatch(next(handler.train_generator))
+                print(f"x batch has a shape of: {X_batch.shape}")
+                print(f"y batch has a shape of: {y_batch.shape}")
+
+                with tf.GradientTape() as tape:
+                    colorized = self.model(X_batch)
+                    print(f"colorized has a shape of {colorized.shape}")
+                    hue_loss = self.hue_bin_loss(y_batch, colorized)
+
+                    grads = tape.gradient(hue_loss, self.model.trainable_variables)
+                    optimizer.apply_gradients(zip(grads, self.model.trainable_variables))
+
+                print(f"epoch {epoch + 1}/{epochs} ::: step {step + 1}/{num_steps} ::: loss {tf.reduce_mean(hue_loss)}")
+
+                # Optionally, you can call your callbacks here
+                for func in callbacks:
+                    func()
+
+                prob = random.random()
+                if prob < 0.1:
+                    self.HUE_WEIGHT -= 0.05
+
+
+    def train(self, x_train, y_train, batchSize : int, epochs : int, folder : str, callBacks = [], lr: float = 0.001) -> None :
         if not os.path.exists(CNN.SAVE_FILE_PATH + folder):            
             os.makedirs(CNN.SAVE_FILE_PATH + folder)
             os.makedirs(os.path.join(CNN.SAVE_FILE_PATH + folder, 'viz'))
             os.makedirs(os.path.join(CNN.SAVE_FILE_PATH + folder, 'weights'))
             os.makedirs(os.path.join(CNN.SAVE_FILE_PATH + folder, 'images'))
             
-        optimizer = Adam(self.lr)
+        optimizer = Adam(lr)
 
         losses = []
         num_steps = x_train.shape[0]//batchSize
@@ -88,7 +129,6 @@ class CNN:
 
                 with tf.GradientTape() as tape:
                     colorized = self.model(X_batch)
-                    print(colorized)
                     
                     hue_loss = self.hue_bin_loss(y_batch, colorized)
                     losses.append(hue_loss.numpy())                    
@@ -98,12 +138,14 @@ class CNN:
             
                 print(f"epoch {epoch}/{epochs} ::: step {step}/{num_steps} ::: loss {tf.math.reduce_mean(hue_loss)}")
 
-                for func in callBacks:
-                    func()
+                # for func in callBacks:
+                #     func()
 
                 prob = random.random()
                 if prob < 0.1:
                     self.HUE_WEIGHT -= 0.05
+        
+        print(f"Model finished training......")
     
     def initialize_model(self, inp):
         inp_expanded = tf.expand_dims(inp, axis=0) 
@@ -130,12 +172,6 @@ class CNN:
         my_model = Conv2D(512,(3,3),padding='same',strides=1)(my_model)
         my_model = LeakyReLU()(my_model)
         my_model = BatchNormalization()(my_model)
-
-#        my_model = MaxPooling2D(pool_size=(2,2),padding='same')(my_model)
-
-#        my_model = Conv2D(512,(3,3),padding='same',strides=1)(my_model)
- #       my_model = LeakyReLU()(my_model)
-  #      my_model = BatchNormalization()(my_model)
 
         my_model = Conv2D(256,(3,3),padding='same',strides=1)(my_model)
         my_model = LeakyReLU()(my_model)
@@ -191,6 +227,7 @@ class CNN:
         plt.axis('off')
 
         plt.show()
+        plt.close()
 
 
     def test_model(self, path):

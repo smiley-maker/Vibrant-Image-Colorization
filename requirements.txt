@@ -3,3 +3,4 @@ build
 tensorflow
 numpy
 matplotlib
+opencv
