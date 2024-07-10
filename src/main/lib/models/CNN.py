@@ -26,15 +26,16 @@ class CNN:
     MSE_WEIGHT = 0.1
     SAVE_FILE_PATH = "reports/models/"
     SAVE_MODEL_PATH = "src/saved_models/"
-    SHAPE = (256, 256)
+    SHAPE = (256, 256, 1)
 
     def __init__(self, lr):
         self.lr = lr
         self.input_shape = CNN.SHAPE
+        print(f"CNN has an input shape of {self.input_shape}")
         self.input = Input(shape=self.input_shape)
         print(self.input)
         self.output = self.initialize_model(self.input)
-        print(self.output)
+        print(f"Output: {self.output}")
 
         self.model = Model(self.input, self.output, name="cnn_256")
         self.model.compile(optimizer=Adam(learning_rate=lr), loss=self.hue_bin_loss)
@@ -42,15 +43,17 @@ class CNN:
     
     def hue_bin_loss(self, y_true, y_pred):
         print(f"y true has size: {y_true.shape}")
+        print(f"y pred has size: {y_pred.shape}")
         a_true, b_true = tf.split(y_true, num_or_size_splits=2, axis=-1)
         a_pred, b_pred = tf.split(y_pred, num_or_size_splits=2, axis=-1)
         
-        print("a_true shape:", a_true.shape)
-        print("b_true shape:", b_true.shape)
-        print("a_pred shape:", a_pred.shape)
-        print("b_pred shape:", b_pred.shape)
+#        print("a_true shape:", a_true.shape)
+#        print("b_true shape:", b_true.shape)
+#        print("a_pred shape:", a_pred.shape)
+#        print("b_pred shape:", b_pred.shape)
 
         condition1 = tf.logical_and(tf.less(y_true, 0), tf.less(y_pred, 0))
+        print(f"Condition One: {condition1}")
         condition2 = tf.logical_and(tf.greater(y_true, 0), tf.greater(y_pred, 0))
 
         hl = self.HUE_WEIGHT * tf.where(condition1 | condition2, 0.0, tf.abs(y_pred - y_true))
@@ -118,7 +121,7 @@ class CNN:
         print(f"Epochs {epochs}, steps per epoch {num_steps}")
 
         for epoch in range(epochs):
-            for step in range(num_steps):
+            for step in range(num_steps): #batches
                 start_idx = batchSize * step
                 end_idx = batchSize * (step + 1)
                 indices = np.arange(len(x_train))
@@ -129,6 +132,7 @@ class CNN:
 
                 with tf.GradientTape() as tape:
                     colorized = self.model(X_batch)
+                    print(f"colorized has a shape of: {colorized.shape}")
                     
                     hue_loss = self.hue_bin_loss(y_batch, colorized)
                     losses.append(hue_loss.numpy())                    
@@ -199,6 +203,7 @@ class CNN:
 
 
         my_model = Conv2D(2,(3,3), activation='tanh',padding='same',strides=1)(my_model)
+        print(f"My Model: {my_model} ")
 
         return my_model
     

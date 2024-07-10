@@ -1,0 +1,49 @@
+name = "Vibrant Image Colorization"
+skipFolders = [ "node_modules", ".vscode", "out", "dist", ".vscode-test" ]
+skipFiles = [ ".gitignore", "package.json" ]
+
+[[processes]]
+id = "process1"
+name = "Inbox"
+
+  [[processes.tasks]]
+  id = "task1"
+  title = "This is a new feature"
+  description = ""
+  tag = "backlog"
+  linkFiles = [ ]
+  dueDate = ""
+  checkList = [ ]
+  priority = ""
+  linkCommits = [ ]
+
+  [[processes.tasks]]
+  id = "wdpzgdbj713nk4afu8ldwa9y"
+  title = "Modify to use Pytorch."
+  description = "<p>I want to use PyTorch instead of TensorFlow because it seems to be more efficient when it comes to training with multiple loss functions and interrupts. The data handler needs to be modified to use a PyTorch DataLoader. It should be fairly similar to what is written already, just with some minor changes to the workflow. </p>"
+  tag = "backlog"
+  linkFiles = [ ]
+  dueDate = ""
+  checkList = [ ]
+  priority = ""
+  linkCommits = [ ]
+
+[[processes]]
+id = "process2"
+name = "Working On"
+
+  [[processes.tasks]]
+  id = "task2"
+  title = "This is a bug should be repair"
+  description = ""
+  tag = "bug"
+  linkFiles = [ ]
+  dueDate = ""
+  checkList = [ ]
+  priority = ""
+  linkCommits = [ ]
+
+[[processes]]
+id = "process3"
+name = "Done"
+tasks = [ ]

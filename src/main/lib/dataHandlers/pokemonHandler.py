@@ -6,9 +6,71 @@ import logging
 import cv2
 import os
 
+# TODO: Modify to use Pytorch. kanpilotID(wdpzgdbj713nk4afu8ldwa9y)
+
+from src.main.lib.utils.imports import *
+
+POKEMON_IMAGE_PATH = "/Users/jordan/Data/pokemon_dataset/images/"
+POKEMON_DATA_PATH = "/Users/jordan/Data/pokemon_dataset/pokemon.csv"
+
+class PokemonDataset(Dataset):
+    def __init__(self):
+        self.image_dir = POKEMON_IMAGE_PATH
+        self.image_paths = sorted(self._find_files_(self.image_dir))
+        self.pokemon_df = pd.read_csv(POKEMON_DATA_PATH)
+        self.pokemon_df.set_index("Name", inplace=True)
+        self.preprocess = transforms.Compose([
+            transforms.ToTensor(),  # Convert image to PyTorch tensor
+            transforms.Normalize(mean=[0.5], std=[0.5]),  # Normalize for Lab colorspace
+            transforms.Resize((256, 256)),  # Resize to desired size
+        ])
+    
+    def __len__(self):
+        return len(self.image_paths)
+    
+    def __getitem__(self, index):
+        image_path = self.image_paths[index]
+        pokemon_name = image_path.split("/")[-1].replace('.png', '')
+        pokemon_type = self.pokemon_df.loc[pokemon_name]["Type1"]
+
+        img = cv2.imread(image_path)  
+
+        # Apply preprocessing defined in self.preprocess
+        img = self.preprocess(img)
+
+        # Separate X (grayscale) and Y (color channels)
+        X = img[:, 0:1]
+        Y = img[:, 1:]
+        
+        return X, Y, pokemon_type
+    
+    def _find_files_(self, image_dir, pattern="*.png"):
+        img_path_list = []
+        for root, dirnames, filenames in os.walk(image_dir):
+            for filename in fnmatch.filter(filenames, pattern):
+                img_path_list.append(os.path.join(root, filename))
+        
+        return img_path_list
+    
+    
+
+
+if __name__ == "__main__":
+    print("Data Handler was run directly, initiating example...")
+    dataset = PokemonDataset()
+    print("CSV data has a format of:")
+    print(dataset.pokemon_df.head())
+
+    print("Selecting a random Pokemon from the dataset...")
+    x, name = dataset[random.randrange(0, len(dataset))]
+
+    plt.figure(figsize=(5, 5))
+    plt.imshow(torch.reshape(x, (120, 120, 3)))
+    plt.title(name)
+    plt.show()
 
 class pokemonHandler():
-    DATA_PATH = "src/main/data/pokemon/"
+    DATA_PATH = "src/main/data/pokemon/raw_images/POKEMON/"
 
     IMG_SIZE = (256, 256)
     BATCH_SIZE = 32
@@ -139,6 +201,31 @@ class pokemonHandler():
         return X_batch, Y_batch
 
 
+    def prepareAllInputData(self):
+        X=[]
+        y=[]
+        for imageDir in os.listdir(pokemonHandler.DATA_PATH):
+            try:
+                img = cv2.imread(pokemonHandler.DATA_PATH + imageDir)
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        
+                img = img.astype(np.float32)
+                img_lab = cv2.cvtColor(img, cv2.COLOR_RGB2Lab)
+                # resize the lightness channel to network input size 
+                img_lab_rs = cv2.resize(img_lab, (pokemonHandler.IMG_SIZE[0], pokemonHandler.IMG_SIZE[1])) # resize image to network input size
+                img_l = img_lab_rs[:,:,0] # pull out L channel
+                img_ab = img_lab_rs[:,:,1:]#Extracting the ab channel
+                img_ab = img_ab/128
+                #The true color values range between -128 and 128. This is the default interval 
+                #in the Lab color space. By dividing them by 128, they too fall within the -1 to 1 interval.
+                X.append(img_l)
+                y.append(img_ab)
+            except:
+                pass
+        self.xTrain = np.array(X)
+        self.yTrain = np.array(y)
+        
+        return self
     
 
     def collectData(self):
