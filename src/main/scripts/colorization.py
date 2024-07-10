@@ -7,6 +7,7 @@ from src.main.lib.trainers.colorizationTraining import TrainCNN
 if __name__ == "__main__":    
     # Creates a pytorch device
     device = torch.device("mps")
+    print(f"Connected to {device}")
 
     # Settings
     batch_size = 32
@@ -21,6 +22,7 @@ if __name__ == "__main__":
         batch_norm=True,
         device=device
     )
+
 
     # sets up a pokemonHandler object
     dataset = PokemonDataset()

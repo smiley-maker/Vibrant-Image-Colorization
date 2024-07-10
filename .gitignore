@@ -1,6 +1,5 @@
 **/__pycache__/
 **/.DS_Store
-src/data/
 venv/
 Vibrant-Image-Colorization.egg-info/
 data/
@@ -23,8 +22,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
 parts/
 sdist/
 var/
@@ -136,7 +133,6 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-/src/VAE/runs/
 
 # Spyder project settings
 .spyderproject
