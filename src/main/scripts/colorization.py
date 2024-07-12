@@ -1,8 +1,15 @@
-#from src.main.lib.models.CNN import CNN
+from src.main.lib.models.CNN import CNN
 from src.main.lib.utils.imports import *
 from src.main.lib.models.colorization_model import CNN
 from src.main.lib.dataHandlers.pokemonHandler import pokemonHandler, PokemonDataset
 from src.main.lib.trainers.colorizationTraining import TrainCNN
+
+def collate(batch):
+    X = [item[0] for item in batch]  # Extract X data from each item
+    Y = [item[1] for item in batch]  # Extract Y data from each item
+    X = torch.stack(X)  # Stack X tensors
+    Y = torch.stack(Y)  # Stack Y tensors
+    return X, Y
 
 if __name__ == "__main__":    
     # Creates a pytorch device
@@ -16,17 +23,17 @@ if __name__ == "__main__":
     # Creates the initial model
     model = CNN(
         batch_size=batch_size,
-        num_layers=10,
+        num_layers=3,
         inp_size=(1, 256, 256),
         leaky_relu=True,
         batch_norm=True,
         device=device
-    )
+    ).to(device)
 
 
     # sets up a pokemonHandler object
-    dataset = PokemonDataset()
-    dataloader = DataLoader(dataset, batch_size=batch_size, drop_last=True)#, collate_fn=collate)
+    dataset = PokemonDataset(device)
+    dataloader = DataLoader(dataset, batch_size=batch_size, drop_last=True, collate_fn=collate)
 
     # Creates an optimizer for training
     optimizer = optim.Adam(model.parameters(), lr=3e-4)

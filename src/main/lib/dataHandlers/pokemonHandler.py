@@ -14,15 +14,17 @@ POKEMON_IMAGE_PATH = "/Users/jordan/Data/pokemon_dataset/images/"
 POKEMON_DATA_PATH = "/Users/jordan/Data/pokemon_dataset/pokemon.csv"
 
 class PokemonDataset(Dataset):
-    def __init__(self):
+    def __init__(self, device):
         self.image_dir = POKEMON_IMAGE_PATH
         self.image_paths = sorted(self._find_files_(self.image_dir))
         self.pokemon_df = pd.read_csv(POKEMON_DATA_PATH)
         self.pokemon_df.set_index("Name", inplace=True)
+        self.device = device
         self.preprocess = transforms.Compose([
+            transforms.Lambda(lambda x : cv2.cvtColor(x, cv2.COLOR_BGR2LAB)),
             transforms.ToTensor(),  # Convert image to PyTorch tensor
-            transforms.Normalize(mean=[0.5], std=[0.5]),  # Normalize for Lab colorspace
-            transforms.Resize((256, 256)),  # Resize to desired size
+          #  transforms.Normalize(mean=[0.5], std=[0.5]),  # Normalize for Lab colorspace
+#            transforms.Resize((256, 256, 1)),  # Resize to desired size
         ])
     
     def __len__(self):
@@ -34,15 +36,30 @@ class PokemonDataset(Dataset):
         pokemon_type = self.pokemon_df.loc[pokemon_name]["Type1"]
 
         img = cv2.imread(image_path)  
+        print(img.shape)
 
         # Apply preprocessing defined in self.preprocess
-        img = self.preprocess(img)
+#        img = cv2.resize(img, (3, 256, 256))
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+        img = np.reshape(img, (3, 120, 120))
+        #img = self.preprocess(img)
+        
 
         # Separate X (grayscale) and Y (color channels)
-        X = img[:, 0:1]
-        Y = img[:, 1:]
-        
-        return X, Y, pokemon_type
+        #print("Image Shape")
+        #print(img.shape)
+#        X = img[:, 0:1]
+        X = img[0, :, :]
+#        print(X.shape)
+        np.reshape(X, (1, 120, 120))
+        Y = img[1:, :, :]
+        np.reshape(Y, (2, 120, 120))
+        #X = X.toTensor()
+        #Y = transforms.ToTensor(Y)
+        X = torch.tensor(X, dtype=torch.float32, device=self.device)
+        Y = torch.tensor(Y, dtype=torch.float32, device=self.device)
+
+        return X, Y
     
     def _find_files_(self, image_dir, pattern="*.png"):
         img_path_list = []
@@ -55,19 +72,6 @@ class PokemonDataset(Dataset):
     
 
 
-if __name__ == "__main__":
-    print("Data Handler was run directly, initiating example...")
-    dataset = PokemonDataset()
-    print("CSV data has a format of:")
-    print(dataset.pokemon_df.head())
-
-    print("Selecting a random Pokemon from the dataset...")
-    x, name = dataset[random.randrange(0, len(dataset))]
-
-    plt.figure(figsize=(5, 5))
-    plt.imshow(torch.reshape(x, (120, 120, 3)))
-    plt.title(name)
-    plt.show()
 
 class pokemonHandler():
     DATA_PATH = "src/main/data/pokemon/raw_images/POKEMON/"

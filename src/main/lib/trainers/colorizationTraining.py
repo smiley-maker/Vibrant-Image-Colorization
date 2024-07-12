@@ -24,13 +24,14 @@ class TrainCNN:
         self.save_images = save_images
         self.save_path = save_path + f"-{self.epochs}epochs"
         self.writer = SummaryWriter(self.save_path)  # Create writer    
+        print("Initialized trainer")
 
     def saturated_huber_loss(self, y_true, y_pred):
         # Both the ground truth and predicted inputs have two results for the A and B
         # color channels, respectively. So, to retrieve the values for each, we can
         # split along the 
-        a_true, b_true = torch.split(y_true, split_size_or_sections=2, dim=-1)
-        a_pred, b_pred = torch.split(y_pred, split_size_or_sections=2, dim=-1)
+        a_true, b_true = torch.split(y_true, split_size_or_sections=2, dim=0)
+        a_pred, b_pred = torch.split(y_pred, split_size_or_sections=2, dim=0)
 
         # Computes the mean-squared error between the a and b values of the predicted
         # and ground truth tensors. 
@@ -51,6 +52,8 @@ class TrainCNN:
         # Combines the color loss with the hue and saturation loss
         total_loss = torch.add(color_loss, hue_saturation_loss)
 
+        print(torch.mean(torch.sqrt(total_loss)))
+
         # Return the mean loss over the batch
         return torch.mean(torch.sqrt(total_loss))
 
@@ -60,19 +63,19 @@ class TrainCNN:
         for epoch in range(self.epochs):
             overall_loss = 0
 
-            for batch_num, x in enumerate(self.data):
-                print("Hello")
-                print(x)
-                x = x.to(self.device)
+            for batch_num, data in enumerate(self.data):
+                x = data[0].to(self.device)
+                y = data[1].to(self.device)
+                x = torch.reshape(x, (32, 1, 120, 120))
 
                 self.optimizer.zero_grad()
 
-                x_hat = self.model(x)
-                loss = self.saturated_huber_loss(x, x_hat)
+                y_hat = self.model(x) # Breaks here
+                loss = self.saturated_huber_loss(y, y_hat)
 
                 if self.extra_losses != None:
                     for l in self.extra_losses:
-                        loss += (l(x, x_hat))
+                        loss += (l(y, y_hat))
 
                 overall_loss += loss.item()
 
