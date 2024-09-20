@@ -7,10 +7,11 @@ I implemented a convolutional neural network (CNN) trained with a custom loss fu
 
 ## Initial Results
 
-<img src="./src/VAE/results/fixed/32_initial_trajectories_72_after_200_length_11200_epochs_75_queries.png" alt="75 Queries Mutual Information vs Our Approach" />
 
-<img src="./src/VAE/results/alignment/10000_epochs_150_length_33_trajectory_set.png" alt="Alignment Comparisons Over 3 Trials" />
+<img src="./images/300_epochs_pokemon.png" alt="Example colorization after 300 epochs." />
 
-<img src="./src/VAE/results/alignment/10000_epochs_150_length_33_trajectory_set.png" alt="Alignment Comparisons Over 3 Trials" />
+<img src="./images/500_epochs.png" alt="Example colorization after 500 epochs." />
 
-<img src="./src/VAE/results/convergence/11200_epochs_200_length_33_trajectory_set.png" alt="Convergence Comparison Over 11 Trials" />
+<img src="./images/flamingo.png" alt="Example colorization of a flamingo photograph. " />
+
+<img src="./images/water.png" alt="Example colorization of water photograph." />
